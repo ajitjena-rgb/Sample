@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 
 // ─── Design tokens ───────────────────────────────────────
@@ -313,6 +314,7 @@ const ChatButton = styled.button`
 
 // ─── Component ────────────────────────────────────────────
 export default function AccountCreated() {
+  const navigate = useNavigate();
   return (
     <PageWrapper>
       <PhoneFrame>
@@ -411,7 +413,7 @@ export default function AccountCreated() {
                 </FundCardContent>
 
                 {/* Add Funds button */}
-                <AddFundsButton>Add Funds Now</AddFundsButton>
+                <AddFundsButton onClick={() => navigate('/add-funds')}>Add Funds Now</AddFundsButton>
 
                 {/* Security note */}
                 <SecurityNote>
