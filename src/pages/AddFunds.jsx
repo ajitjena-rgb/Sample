@@ -311,7 +311,10 @@ export default function AddFunds() {
 
         {/* Bottom action bar */}
         <BottomBar>
-          <PrimaryButton disabled={!canProceed}>
+          <PrimaryButton
+            disabled={!canProceed}
+            onClick={canProceed ? () => navigate('/payment-source', { state: { amount } }) : undefined}
+          >
             Proceed
           </PrimaryButton>
         </BottomBar>
