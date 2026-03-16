@@ -245,13 +245,13 @@ const PaymentTileRight = styled.div`
   gap: 8px;
 `;
 
-// Radio circle
+// Radio circle — teal when checked (matches Figma #30989A)
 const RadioCircle = styled.div`
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid ${({ checked }) => (checked ? colors.purple : colors.divider)};
-  background: ${({ checked }) => (checked ? colors.purple : '#fff')};
+  border: 2px solid ${({ checked, teal }) => checked ? (teal ? '#30989A' : colors.purple) : colors.divider};
+  background: ${({ checked, teal }) => checked ? (teal ? '#30989A' : colors.purple) : '#fff'};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,6 +266,86 @@ const RadioCircle = styled.div`
     background: #fff;
     display: ${({ checked }) => (checked ? 'block' : 'none')};
   }
+`;
+
+// ─── Card form expanded panel ──────────────────────────────
+const CardTileWrapper = styled.div`
+  background: ${colors.bgLighter};
+  border: 1.5px solid ${({ expanded }) => (expanded ? '#30989A' : 'transparent')};
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+`;
+
+const CardTileHeader = styled.button`
+  width: 100%;
+  height: 72px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  cursor: pointer;
+`;
+
+const CardFormBody = styled.div`
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const FieldLabel = styled.p`
+  font-size: 14px;
+  font-weight: 500;
+  color: ${colors.primary};
+  line-height: 24px;
+  margin-bottom: 4px;
+`;
+
+const FieldInput = styled.input`
+  width: 100%;
+  height: 42px;
+  background: #fff;
+  border: 1px solid ${colors.divider};
+  border-radius: 16px;
+  padding: 0 16px 0 18px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: ${colors.primary};
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+
+  &::placeholder { color: ${colors.gray2}; }
+  &:focus { border-color: #30989A; }
+`;
+
+const FieldRow = styled.div`
+  display: flex;
+  gap: 12px;
+
+  > div { flex: 1; }
+`;
+
+const SecurityTag = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #E9F5F5;
+  border-radius: 8px;
+  padding: 6px 12px;
+`;
+
+const SecurityTagText = styled.p`
+  font-size: 12px;
+  font-weight: 500;
+  color: #0C585A;
+  line-height: 24px;
+  text-align: center;
 `;
 
 // ─── Bottom bar ───────────────────────────────────────────
@@ -385,8 +465,10 @@ export default function PaymentSource() {
   const amount = location.state?.amount;
 
   const [selected, setSelected] = useState(null);
+  const [card, setCard] = useState({ number: '', cvv: '', expiry: '' });
 
-  const canProceed = !!selected;
+  const cardComplete = card.number.length >= 15 && card.cvv.length >= 3 && card.expiry.length >= 4;
+  const canProceed = selected && (selected !== 'card' || cardComplete);
 
   return (
     <PageWrapper>
@@ -455,20 +537,88 @@ export default function PaymentSource() {
               ))}
             </QuickPayRow>
 
-            {/* Credit / Debit */}
-            <PaymentTile
-              selected={selected === 'card'}
-              onClick={() => setSelected('card')}
-            >
-              <PaymentTileLeft>
-                <RadioCircle checked={selected === 'card'} />
-                <PaymentTileLabel>Credit or Debit cards</PaymentTileLabel>
-              </PaymentTileLeft>
-              <PaymentTileRight>
-                <VisaLogo />
-                <MastercardLogo />
-              </PaymentTileRight>
-            </PaymentTile>
+            {/* Credit / Debit — expandable */}
+            <CardTileWrapper expanded={selected === 'card'}>
+              <CardTileHeader onClick={() => setSelected(selected === 'card' ? null : 'card')}>
+                <PaymentTileLeft>
+                  <RadioCircle checked={selected === 'card'} teal />
+                  <PaymentTileLabel>Credit or Debit cards</PaymentTileLabel>
+                </PaymentTileLeft>
+                <PaymentTileRight>
+                  <VisaLogo />
+                  <MastercardLogo />
+                </PaymentTileRight>
+              </CardTileHeader>
+
+              {selected === 'card' && (
+                <CardFormBody>
+                  {/* Card number */}
+                  <div>
+                    <FieldLabel>Card number</FieldLabel>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{
+                        position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)',
+                        pointerEvents: 'none'
+                      }}>
+                        <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+                          <rect x="0.5" y="0.5" width="15" height="11" rx="1.5" stroke="#DDDFE4"/>
+                          <rect x="0" y="3" width="16" height="2.5" fill="#DDDFE4"/>
+                        </svg>
+                      </span>
+                      <FieldInput
+                        style={{ paddingLeft: 42 }}
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Card number"
+                        maxLength={19}
+                        value={card.number}
+                        onChange={e => setCard(c => ({ ...c, number: e.target.value.replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim() }))}
+                      />
+                    </div>
+                  </div>
+
+                  {/* CVV + Expiry */}
+                  <FieldRow>
+                    <div>
+                      <FieldLabel>CVV</FieldLabel>
+                      <FieldInput
+                        type="password"
+                        inputMode="numeric"
+                        placeholder="CVV"
+                        maxLength={4}
+                        value={card.cvv}
+                        onChange={e => setCard(c => ({ ...c, cvv: e.target.value.replace(/\D/g,'') }))}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>Expiration date</FieldLabel>
+                      <FieldInput
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="MM/YY"
+                        maxLength={5}
+                        value={card.expiry}
+                        onChange={e => {
+                          let v = e.target.value.replace(/\D/g,'');
+                          if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2,4);
+                          setCard(c => ({ ...c, expiry: v }));
+                        }}
+                      />
+                    </div>
+                  </FieldRow>
+
+                  {/* Security note */}
+                  <SecurityTag>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="11" width="18" height="11" rx="2" stroke="#0C585A" strokeWidth="1.8"/>
+                      <path d="M7 11V7a5 5 0 0110 0v4" stroke="#0C585A" strokeWidth="1.8" strokeLinecap="round"/>
+                      <circle cx="12" cy="16" r="1.5" fill="#0C585A"/>
+                    </svg>
+                    <SecurityTagText>Your card info is stored securely and encrypted.</SecurityTagText>
+                  </SecurityTag>
+                </CardFormBody>
+              )}
+            </CardTileWrapper>
 
             {/* Bank transfer */}
             <PaymentTile
