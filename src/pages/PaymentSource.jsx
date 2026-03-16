@@ -466,9 +466,15 @@ export default function PaymentSource() {
 
   const [selected, setSelected] = useState(null);
   const [card, setCard] = useState({ number: '', cvv: '', expiry: '' });
+  const [bank, setBank] = useState({ account: '', routing: '' });
 
   const cardComplete = card.number.length >= 15 && card.cvv.length >= 3 && card.expiry.length >= 4;
-  const canProceed = selected && (selected !== 'card' || cardComplete);
+  const bankComplete = bank.account.length >= 6 && bank.routing.length === 9;
+  const canProceed = selected && (
+    (selected === 'card' && cardComplete) ||
+    (selected === 'bank' && bankComplete) ||
+    (selected !== 'card' && selected !== 'bank')
+  );
 
   return (
     <PageWrapper>
@@ -620,16 +626,54 @@ export default function PaymentSource() {
               )}
             </CardTileWrapper>
 
-            {/* Bank transfer */}
-            <PaymentTile
-              selected={selected === 'bank'}
-              onClick={() => setSelected('bank')}
-            >
-              <PaymentTileLeft>
-                <RadioCircle checked={selected === 'bank'} />
-                <PaymentTileLabel>Bank transfer</PaymentTileLabel>
-              </PaymentTileLeft>
-            </PaymentTile>
+            {/* Bank transfer — expandable */}
+            <CardTileWrapper expanded={selected === 'bank'}>
+              <CardTileHeader onClick={() => setSelected(selected === 'bank' ? null : 'bank')}>
+                <PaymentTileLeft>
+                  <RadioCircle checked={selected === 'bank'} teal />
+                  <PaymentTileLabel>Bank transfer</PaymentTileLabel>
+                </PaymentTileLeft>
+              </CardTileHeader>
+
+              {selected === 'bank' && (
+                <CardFormBody>
+                  {/* Account Number */}
+                  <div>
+                    <FieldLabel>Account Number</FieldLabel>
+                    <FieldInput
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Enter account number"
+                      value={bank.account}
+                      onChange={e => setBank(b => ({ ...b, account: e.target.value.replace(/\D/g, '') }))}
+                    />
+                  </div>
+
+                  {/* Routing Number */}
+                  <div>
+                    <FieldLabel>Routing Number</FieldLabel>
+                    <FieldInput
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Enter 9-digit routing number"
+                      maxLength={9}
+                      value={bank.routing}
+                      onChange={e => setBank(b => ({ ...b, routing: e.target.value.replace(/\D/g, '') }))}
+                    />
+                  </div>
+
+                  {/* Security note */}
+                  <SecurityTag>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="11" width="18" height="11" rx="2" stroke="#0C585A" strokeWidth="1.8"/>
+                      <path d="M7 11V7a5 5 0 0110 0v4" stroke="#0C585A" strokeWidth="1.8" strokeLinecap="round"/>
+                      <circle cx="12" cy="16" r="1.5" fill="#0C585A"/>
+                    </svg>
+                    <SecurityTagText>Your bank info is stored securely and encrypted.</SecurityTagText>
+                  </SecurityTag>
+                </CardFormBody>
+              )}
+            </CardTileWrapper>
 
           </MethodsWrapper>
         </Content>
