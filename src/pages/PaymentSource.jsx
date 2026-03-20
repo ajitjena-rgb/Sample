@@ -458,6 +458,96 @@ const QUICK_PAY = [
   { id: 'cash',   label: 'Cash App',   Logo: CashAppLogo },
 ];
 
+// ─── Review popover ───────────────────────────────────────
+const Overlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 48, 79, 0.2);
+  z-index: 10;
+  border-radius: 40px;
+`;
+
+const BottomSheet = styled.div`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 24px;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  box-shadow:
+    0px 2px 46px rgba(34,38,65,0.08),
+    0px 0.8px 17px rgba(34,38,65,0.06),
+    0px 0.175px 6px rgba(34,38,65,0.04);
+`;
+
+const DragHandle = styled.div`
+  width: 70px;
+  height: 4px;
+  background: ${colors.divider};
+  border-radius: 4px;
+  margin: 0 auto 8px;
+`;
+
+const ReviewCard = styled.div`
+  background: ${colors.bgLighter};
+  border-radius: 12px;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+`;
+
+const ReviewRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+`;
+
+const ReviewLabel = styled.span`
+  color: ${colors.primaryGray};
+  width: 190px;
+  flex-shrink: 0;
+`;
+
+const ReviewValue = styled.span`
+  color: ${colors.primary};
+`;
+
+const CheckboxRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+`;
+
+const CheckboxBox = styled.button`
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid ${({ checked }) => (checked ? '#48B5B5' : colors.divider)};
+  background: ${({ checked }) => (checked ? '#48B5B5' : '#fff')};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+`;
+
+const CheckboxText = styled.p`
+  font-size: 12px;
+  font-weight: 400;
+  color: ${colors.primary};
+  line-height: 19px;
+`;
+
 // ─── Component ────────────────────────────────────────────
 export default function PaymentSource() {
   const navigate = useNavigate();
@@ -465,6 +555,8 @@ export default function PaymentSource() {
   const amount = location.state?.amount;
 
   const [selected, setSelected] = useState(null);
+  const [showReview, setShowReview] = useState(false);
+  const [authorized, setAuthorized] = useState(false);
   const [card, setCard] = useState({ number: '', cvv: '', expiry: '' });
   const [bank, setBank] = useState({ account: '', routing: '' });
 
@@ -530,7 +622,7 @@ export default function PaymentSource() {
                 <QuickPayTile
                   key={id}
                   selected={selected === id}
-                  onClick={() => setSelected(id)}
+                  onClick={() => { setSelected(id); setAuthorized(false); setShowReview(true); }}
                   aria-label={label}
                 >
                   <Logo />
@@ -688,6 +780,65 @@ export default function PaymentSource() {
             Proceed
           </ProceedBtn>
         </BottomBar>
+
+        {/* Review & Confirm popover */}
+        {showReview && (
+          <>
+            <Overlay onClick={() => setShowReview(false)} />
+            <BottomSheet>
+              <DragHandle />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {/* Title */}
+                <div>
+                  <SectionHeading style={{ fontSize: 18 }}>Review &amp; Confirm</SectionHeading>
+                  <SectionSubtitle>Please verify the details below</SectionSubtitle>
+                </div>
+
+                {/* Details card */}
+                <ReviewCard>
+                  <ReviewRow>
+                    <ReviewLabel>Adding to</ReviewLabel>
+                    <ReviewValue>
+                      Primary Checking<br />(••••3847)
+                    </ReviewValue>
+                  </ReviewRow>
+                  <ReviewRow>
+                    <ReviewLabel>From</ReviewLabel>
+                    <ReviewValue>
+                      {QUICK_PAY.find(p => p.id === selected)?.label ?? selected}
+                    </ReviewValue>
+                  </ReviewRow>
+                  <ReviewRow>
+                    <ReviewLabel>Amount</ReviewLabel>
+                    <ReviewValue>${amount ? Number(amount).toFixed(2) : '0.00'}</ReviewValue>
+                  </ReviewRow>
+                </ReviewCard>
+
+                {/* Checkbox */}
+                <CheckboxRow>
+                  <CheckboxBox checked={authorized} onClick={() => setAuthorized(a => !a)} aria-label="Authorize transfer">
+                    {authorized && (
+                      <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                        <path d="M1 4L4.5 7.5L11 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </CheckboxBox>
+                  <CheckboxText>
+                    By confirming, I authorize this fund transfer to my Primary Checking account (••••3847)
+                  </CheckboxText>
+                </CheckboxRow>
+              </div>
+
+              {/* Proceed button */}
+              <PrimaryButton
+                disabled={!authorized}
+                onClick={authorized ? () => { setShowReview(false); navigate('/review', { state: { amount, method: selected } }); } : undefined}
+              >
+                Proceed for payment
+              </PrimaryButton>
+            </BottomSheet>
+          </>
+        )}
 
       </PhoneFrame>
     </PageWrapper>
